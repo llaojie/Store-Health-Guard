@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Store Health Guard - 门店健康度预警系统 Demo</title>
+  <!-- Element Plus -->
+  <link rel="stylesheet" href="https://unpkg.com/element-plus@2.9.1/dist/index.css" />
+  <script src="https://unpkg.com/vue@3.5.13/dist/vue.global.prod.js"></script>
+  <script src="https://unpkg.com/element-plus@2.9.1/dist/index.full.min.js"></script>
+  <script src="https://unpkg.com/@element-plus/icons-vue@2.3.1/dist/index.iife.min.js"></script>
+  <!-- ECharts -->
+  <script src="https://unpkg.com/echarts@5.5.1/dist/echarts.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background: #f0f2f5; }
+    .app-layout { display: flex; height: 100vh; }
+    .sidebar { width: 220px; background: #1a1a2e; color: #e0e0e0; display: flex; flex-direction: column; flex-shrink: 0; }
+    .sidebar .logo { padding: 20px 16px; text-align: center; border-bottom: 1px solid #2a2a4a; }
+    .sidebar .logo h2 { color: #fff; margin: 0; font-size: 17px; }
+    .sidebar .logo p { color: #666; font-size: 11px; margin: 4px 0 0; }
+    .sidebar .nav-item { padding: 14px 20px; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: background 0.2s; font-size: 14px; }
+    .sidebar .nav-item:hover { background: #2a2a4a; }
+    .sidebar .nav-item.active { background: #2a2a4a; color: #409eff; border-right: 3px solid #409eff; }
+    .sidebar .footer { margin-top: auto; padding: 12px; text-align: center; color: #555; font-size: 11px; }
+    .main { flex: 1; overflow-y: auto; padding: 24px; }
+    .page-title { font-size: 22px; font-weight: 600; margin-bottom: 20px; color: #303133; }
+
+    /* 门店卡片 */
+    .store-card { background: #fff; border-radius: 8px; padding: 20px; cursor: pointer; transition: all 0.3s; border: 1px solid #e4e7ed; }
+    .store-card:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(0,0,0,0.1); }
+    .store-card .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .store-card .card-header h3 { margin: 0; font-size: 16px; }
+    .store-card .card-info { color: #909399; font-size: 13px; margin: 4px 0; }
+    .store-card .health-badge { margin-top: 12px; display: flex; align-items: center; gap: 10px; }
+    .score { font-size: 30px; font-weight: bold; }
+    .score.green { color: #67c23a; }
+    .score.yellow { color: #e6a23c; }
+    .score.red { color: #f56c6c; }
+    .status-dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+    .dot-green { background: #67c23a; }
+    .dot-yellow { background: #e6a23c; animation: pulse 2s infinite; }
+    .dot-red { background: #f56c6c; animation: pulse 1s infinite; }
+    @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
+
+    /* 红绿灯面板 */
+    .traffic-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; }
+    .light-card { padding: 14px 10px; text-align: center; border-radius: 8px; border: 2px solid #ddd; transition: all 0.3s; }
+    .light-card.border-green { border-color: #67c23a; background: #f0f9eb; }
+    .light-card.border-yellow { border-color: #e6a23c; background: #fdf6ec; }
+    .light-card.border-red { border-color: #f56c6c; background: #fef0f0; }
+    .light-dot { width: 14px; height: 14px; border-radius: 50%; margin: 0 auto 8px; }
+    .ind-name { font-size: 12px; color: #606266; margin-bottom: 4px; white-space: nowrap; }
+    .ind-value { font-size: 18px; font-weight: bold; color: #303133; }
+    .ind-unit { font-size: 11px; color: #909399; font-weight: normal; }
+
+    /* 统计卡片 */
+    .stat-card { background: #fff; border-radius: 8px; padding: 16px; text-align: center; border: 1px solid #e4e7ed; }
+    .stat-label { color: #909399; font-size: 13px; }
+    .stat-value { font-size: 30px; font-weight: bold; margin: 8px 0; }
+    .stat-unit { color: #909399; font-size: 13px; }
+
+    /* 区块 */
+    .section-card { background: #fff; border-radius: 8px; padding: 20px; margin-bottom: 20px; border: 1px solid #e4e7ed; }
+    .section-card h3 { margin: 0 0 16px; font-size: 16px; }
+
+    /* 人效矩阵 */
+    .matrix-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; max-width: 400px; margin: 20px auto; }
+    .cell { padding: 20px; text-align: center; font-size: 13px; border-radius: 4px; opacity: 0.5; }
+    .cell.active { opacity: 1; transform: scale(1.05); box-shadow: 0 4px 12px rgba(0,0,0,0.2); font-weight: bold; }
+    .lean { background: #e1f3d8; }
+    .obese { background: #faecd8; }
+    .anemic { background: #d9ecff; }
+    .emergency { background: #fde2e2; }
+
+    /* 表格 */
+    .data-table { width: 100%; border-collapse: collapse; }
+    .data-table th, .data-table td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #ebeef5; font-size: 13px; }
+    .data-table th { background: #f5f7fa; color: #909399; font-weight: 500; }
+
+    /* 标签 */
+    .tag { display: inline-block; padding: 2px 10px; border-radius: 4px; font-size: 12px; font-weight: 500; }
+    .tag-success { background: #e1f3d8; color: #67c23a; }
+    .tag-warning { background: #faecd8; color: #e6a23c; }
+    .tag-danger { background: #fde2e2; color: #f56c6c; }
+    .tag-info { background: #e9e9eb; color: #909399; }
+    .tag-primary { background: #d9ecff; color: #409eff; }
+
+    /* 5Why */
+    .why-step { display: flex; align-items: flex-start; gap: 12px; margin: 12px 0; padding: 12px; background: #f5f7fa; border-radius: 6px; }
+    .why-step .step-num { background: #409eff; color: #fff; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0; }
+    .why-q { color: #409eff; font-weight: 500; margin-bottom: 4px; }
+    .why-a { color: #303133; }
+
+    /* 结果框 */
+    .result-box { margin-top: 16px; padding: 16px; border-radius: 8px; background: #f8f9fa; }
+    .result-green { border-left: 4px solid #67c23a; }
+    .result-yellow { border-left: 4px solid #e6a23c; }
+    .result-red { border-left: 4px solid #f56c6c; }
+
+    /* 预警行 */
+    .alert-row { display: flex; align-items: center; gap: 12px; padding: 12px; border-bottom: 1px solid #ebeef5; }
+    .alert-row:last-child { border-bottom: none; }
+
+    /* 返回按钮 */
+    .back-btn { cursor: pointer; color: #409eff; display: inline-flex; align-items: center; gap: 4px; margin-bottom: 16px; }
+    .back-btn:hover { text-decoration: underline; }
+
+    /* 卡片网格 */
+    .card-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px; }
+    .overview-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin: 16px 0; }
+
+    /* Tabs */
+    .tabs { display: flex; border-bottom: 2px solid #e4e7ed; margin-bottom: 20px; }
+    .tab-item { padding: 10px 20px; cursor: pointer; font-size: 14px; color: #606266; border-bottom: 2px solid transparent; margin-bottom: -2px; }
+    .tab-item:hover { color: #409eff; }
+    .tab-item.active { color: #409eff; border-bottom-color: #409eff; }
+
+    .chart-container { height: 350px; }
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="app-layout">
+    <!-- 侧边栏 -->
+    <div class="sidebar">
+      <div class="logo">
+        <h2>🏥 门店健康卫士</h2>
+        <p>Store Health Guard</p>
+      </div>
+      <div class="nav-item" :class="{ active: currentPage === 'dashboard' }" @click="currentPage='dashboard'">
+        📊 门店总览
+      </div>
+      <div class="nav-item" :class="{ active: currentPage === 'alerts' }" @click="currentPage='alerts'">
+        🔔 预警中心 <span v-if="alertCount" class="tag tag-danger" style="margin-left:6px">{{ alertCount }}</span>
+      </div>
+      <div class="nav-item" :class="{ active: currentPage === 'diagnosis' }" @click="currentPage='diagnosis'">
+        🔬 诊断工具
+      </div>
+      <div class="footer">v1.0.0 · 开源</div>
+    </div>
+
+    <!-- 主内容 -->
+    <div class="main">
+
+      <!-- ==================== 门店总览 ==================== -->
+      <div v-if="currentPage === 'dashboard' && !selectedStore">
+        <h1 class="page-title">🏪 门店健康总览</h1>
+        <div class="card-grid">
+          <div v-for="store in stores" :key="store.id" class="store-card" @click="selectedStore=store">
+            <div class="card-header">
+              <h3>{{ store.name }}</h3>
+              <span class="tag" :class="'tag-' + store.bizTag">{{ store.bizTypeName }}</span>
+            </div>
+            <div class="card-info">📍 {{ store.address }}</div>
+            <div class="card-info">📐 {{ store.area }}㎡ · {{ store.seatCount }}座</div>
+            <div class="health-badge">
+              <span class="score" :class="store.health.level">{{ store.health.score }}</span>
+              <span class="status-dot" :class="'dot-' + store.health.level"></span>
+              <span style="color:#909399;font-size:13px">分</span>
+              <span v-if="store.alerts.length" class="tag tag-danger" style="margin-left:auto">{{ store.alerts.length }}条预警</span>
+            </div>
+          </div>
+          <div class="store-card" style="display:flex;align-items:center;justify-content:center;min-height:160px;color:#c0c4cc">
+            <div style="text-align:center">
+              <div style="font-size:36px">＋</div>
+              <p>添加门店</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== 门店详情 ==================== -->
+      <div v-if="currentPage === 'dashboard' && selectedStore">
+        <div class="back-btn" @click="selectedStore=null">← 返回门店列表</div>
+        <h1 class="page-title">{{ selectedStore.name }}</h1>
+
+        <!-- 概览 -->
+        <div class="overview-grid">
+          <div class="stat-card">
+            <div class="stat-label">综合健康度</div>
+            <div class="stat-value" :class="selectedStore.health.level" :style="{color: levelColor(selectedStore.health.level)}">{{ selectedStore.health.score }}</div>
+            <div class="stat-unit">分</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">业态</div>
+            <div class="stat-value" style="font-size:22px">{{ selectedStore.bizTypeName }}</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">活跃预警</div>
+            <div class="stat-value" style="color:#f56c6c">{{ selectedStore.alerts.length }}</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">盈亏平衡点</div>
+            <div class="stat-value" style="font-size:20px">{{ selectedStore.breakeven.toLocaleString() }}<span class="stat-unit">元/日</span></div>
+          </div>
+        </div>
+
+        <!-- 红绿灯 -->
+        <div class="section-card">
+          <h3>🚦 核心指标红绿灯</h3>
+          <div class="traffic-grid">
+            <div v-for="ind in selectedStore.indicators" :key="ind.name" class="light-card" :class="'border-' + ind.level">
+              <div class="light-dot" :class="'dot-' + ind.level"></div>
+              <div class="ind-name">{{ ind.label }}</div>
+              <div class="ind-value">{{ ind.display }} <span class="ind-unit">{{ ind.unit }}</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 趋势图 -->
+        <div class="section-card">
+          <h3>📈 30天指标趋势</h3>
+          <div :id="'chart-' + selectedStore.id" class="chart-container"></div>
+        </div>
+
+        <!-- 六大保命条件 -->
+        <div class="section-card">
+          <h3>🛡️ 单店模型六大保命条件</h3>
+          <table class="data-table">
+            <thead><tr><th>条件</th><th>标准</th><th>当前值</th><th>状态</th></tr></thead>
+            <tbody>
+              <tr v-for="s in selectedStore.survival" :key="s.name">
+                <td>{{ s.name }}</td><td>{{ s.rule }}</td><td>{{ s.value }}</td>
+                <td><span class="tag" :class="s.pass ? 'tag-success' : 'tag-danger'">{{ s.pass ? '✅ 达标' : '❌ 未达标' }}</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 活跃预警 -->
+        <div v-if="selectedStore.alerts.length" class="section-card">
+          <h3>⚠️ 活跃预警</h3>
+          <table class="data-table">
+            <thead><tr><th>等级</th><th>预警项</th><th>当前值</th><th>阈值</th></tr></thead>
+            <tbody>
+              <tr v-for="a in selectedStore.alerts" :key="a.rule_id">
+                <td><span class="tag" :class="a.level==='red'?'tag-danger':'tag-warning'">{{ a.level==='red' ? '🔴 紧急' : '🟡 警告' }}</span></td>
+                <td>{{ a.rule_name }}</td><td>{{ a.display }}</td><td>{{ a.threshold }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ==================== 预警中心 ==================== -->
+      <div v-if="currentPage === 'alerts'">
+        <h1 class="page-title">🔔 预警中心</h1>
+        <div class="section-card">
+          <table class="data-table">
+            <thead><tr><th>等级</th><th>规则ID</th><th>预警名称</th><th>门店</th><th>指标值</th><th>阈值</th><th>日期</th><th>状态</th></tr></thead>
+            <tbody>
+              <tr v-for="a in allAlerts" :key="a.id">
+                <td><span class="tag" :class="a.level==='red'?'tag-danger':'tag-warning'">{{ a.level==='red' ? '🔴 紧急' : '🟡 警告' }}</span></td>
+                <td>{{ a.rule_id }}</td><td>{{ a.rule_name }}</td><td>{{ a.storeName }}</td>
+                <td>{{ a.display }}</td><td>{{ a.threshold }}</td><td>{{ a.date }}</td>
+                <td><span class="tag tag-danger">待处理</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ==================== 诊断工具 ==================== -->
+      <div v-if="currentPage === 'diagnosis'">
+        <h1 class="page-title">🔬 诊断工具</h1>
+        <div class="tabs">
+          <div class="tab-item" :class="{active: diagTab==='be'}" @click="diagTab='be'">💰 快速生死诊断</div>
+          <div class="tab-item" :class="{active: diagTab==='5w'}" @click="diagTab='5w'">🔍 5Why根因分析</div>
+          <div class="tab-item" :class="{active: diagTab==='mx'}" @click="diagTab='mx'">📊 人效体检矩阵</div>
+        </div>
+
+        <!-- 盈亏平衡 -->
+        <div v-if="diagTab==='be'" class="section-card">
+          <h3>💰 盈亏平衡点计算器</h3>
+          <p style="color:#909399;font-size:13px;margin-bottom:16px">输入核心数据，1分钟算出门店"生死账"</p>
+          <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;max-width:500px">
+            <div><label style="font-size:13px;color:#606266">月租金(元)</label><br><input v-model.number="be.rent" type="number" style="width:100%;padding:8px;border:1px solid #dcdfe6;border-radius:4px;margin-top:4px" /></div>
+            <div><label style="font-size:13px;color:#606266">月人工(元)</label><br><input v-model.number="be.labor" type="number" style="width:100%;padding:8px;border:1px solid #dcdfe6;border-radius:4px;margin-top:4px" /></div>
+            <div><label style="font-size:13px;color:#606266">月水电杂费(元)</label><br><input v-model.number="be.utility" type="number" style="width:100%;padding:8px;border:1px solid #dcdfe6;border-radius:4px;margin-top:4px" /></div>
+            <div><label style="font-size:13px;color:#606266">综合毛利率</label><br><input v-model.number="be.margin" type="number" step="0.01" style="width:100%;padding:8px;border:1px solid #dcdfe6;border-radius:4px;margin-top:4px" /></div>
+            <div style="grid-column:span 2"><label style="font-size:13px;color:#606266">实际日营业额(元)</label><br><input v-model.number="be.revenue" type="number" style="width:100%;padding:8px;border:1px solid #dcdfe6;border-radius:4px;margin-top:4px" /></div>
+          </div>
+          <button @click="calcBE" style="margin-top:16px;padding:10px 24px;background:#409eff;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:14px">计算</button>
+          <div v-if="beResult" class="result-box" :class="'result-' + beResult.status" style="margin-top:16px">
+            <p>日固定成本: <strong>{{ beResult.dailyFixed.toLocaleString() }}</strong> 元</p>
+            <p>日盈亏平衡点: <strong style="color:#f56c6c">{{ beResult.breakeven.toLocaleString() }}</strong> 元</p>
+            <p>安全边际: <strong>{{ (beResult.safetyMargin * 100).toFixed(1) }}%</strong></p>
+            <p style="margin-top:8px"><span class="tag" :class="beResult.status==='green'?'tag-success':beResult.status==='yellow'?'tag-warning':'tag-danger'" style="font-size:14px;padding:4px 16px">
+              {{ beResult.status==='green' ? '🟢 健康' : beResult.status==='yellow' ? '🟡 警戒' : '🔴 危险' }}
+            </span></p>
+          </div>
+        </div>
+
+        <!-- 5Why -->
+        <div v-if="diagTab==='5w'" class="section-card">
+          <h3>🔍 5Why根因分析</h3>
+          <div style="margin-bottom:16px">
+            <label style="font-size:13px;color:#606266">选择异常指标</label><br>
+            <select v-model="fw.indicator" style="width:300px;padding:8px;border:1px solid #dcdfe6;border-radius:4px;margin-top:4px">
+              <option value="food_cost_rate">食材成本率超标</option>
+              <option value="labor_cost_rate">人力成本占比超标</option>
+              <option value="gross_margin">毛利率低于警戒线</option>
+              <option value="turnover_rate">翻台率持续偏低</option>
+              <option value="daily_revenue">营业额低于盈亏平衡点</option>
+            </select>
+          </div>
+          <button @click="doFiveWhy" style="padding:10px 24px;background:#409eff;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:14px">开始分析</button>
+          <div v-if="fwResult" style="margin-top:16px">
+            <div v-for="(step, i) in fwResult.steps" :key="i" class="why-step">
+              <div class="step-num">{{ i+1 }}</div>
+              <div><div class="why-q">❓ {{ step.q }}</div><div class="why-a">💡 {{ step.a }}</div></div>
+            </div>
+            <div style="margin-top:16px;padding:12px;background:#fdf6ec;border-radius:6px;border-left:4px solid #e6a23c">
+              <p><strong>🎯 根因:</strong> {{ fwResult.rootCause }}</p>
+            </div>
+            <div style="margin-top:8px;padding:12px;background:#f0f9eb;border-radius:6px;border-left:4px solid #67c23a">
+              <p><strong>📋 SMART行动:</strong> {{ fwResult.smartAction }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 人效矩阵 -->
+        <div v-if="diagTab==='mx'" class="section-card">
+          <h3>📊 人效体检矩阵</h3>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;max-width:500px;margin-bottom:16px">
+            <div><label style="font-size:13px;color:#606266">营收人效(元/时)</label><br><input v-model.number="mx.revenue" type="number" style="width:100%;padding:8px;border:1px solid #dcdfe6;border-radius:4px;margin-top:4px" /></div>
+            <div><label style="font-size:13px;color:#606266">人力成本占比</label><br><input v-model.number="mx.costRate" type="number" step="0.01" style="width:100%;padding:8px;border:1px solid #dcdfe6;border-radius:4px;margin-top:4px" /></div>
+            <div><label style="font-size:13px;color:#606266">业态</label><br>
+              <select v-model="mx.bizType" style="width:100%;padding:8px;border:1px solid #dcdfe6;border-radius:4px;margin-top:4px">
+                <option value="tea_drink">茶饮</option><option value="coffee">咖啡</option>
+                <option value="fast_food">快餐</option><option value="hotpot">火锅</option>
+              </select>
+            </div>
+          </div>
+          <button @click="doMatrix" style="padding:10px 24px;background:#409eff;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:14px">诊断</button>
+          <div v-if="mxResult" style="margin-top:16px">
+            <div class="result-box" :class="'result-' + mxResult.quadrant">
+              <h4 style="margin:0 0 8px">{{ mxResult.name }}</h4>
+              <p>{{ mxResult.diagnosis }}</p>
+              <p style="margin-top:8px"><strong>👉 行动建议:</strong> {{ mxResult.action }}</p>
+            </div>
+            <div class="matrix-grid" style="margin-top:20px">
+              <div class="cell lean" :class="{active: mxResult.quadrant==='lean'}">A区·精益区<br/>维持+冲刺标杆</div>
+              <div class="cell obese" :class="{active: mxResult.quadrant==='obese'}">B区·肥胖区<br/>立即优化编制</div>
+              <div class="cell anemic" :class="{active: mxResult.quadrant==='anemic'}">C区·贫血区<br/>警惕服务崩塌</div>
+              <div class="cell emergency" :class="{active: mxResult.quadrant==='emergency'}">D区·急救区<br/>限时重组方案</div>
+            </div>
+            <p style="text-align:center;color:#909399;font-size:12px;margin-top:4px">← 人力成本占比低 &nbsp;&nbsp;&nbsp; 人力成本占比高 →<br/>↑ 人效高 &nbsp;&nbsp;&nbsp; ↓ 人效低</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+const { createApp, ref, computed, onMounted, watch, nextTick } = Vue;
+
+// ========== 模拟数据 ==========
+const storesData = [
+  {
+    id: 1, name: 'XX茶饮·万象城店', bizTypeName: '茶饮', bizTag: 'success',
+    address: '深圳市罗湖区万象城B1层', area: 80, seatCount: 30,
+    health: { score: 85, level: 'green' },
+    breakeven: 5460,
+    alerts: [
+      { level: 'yellow', rule_id: 'Y002', rule_name: '人力成本占比20%-25%', display: '21.3%', threshold: '≤20%' }
+    ],
+    indicators: [
+      { name: 'daily_revenue', label: '日营业额', display: '8,620', unit: '元', level: 'green' },
+      { name: 'tc', label: '交易单数', display: '326', unit: '单', level: 'green' },
+      { name: 'ac', label: '客单价', display: '26.4', unit: '元', level: 'green' },
+      { name: 'food_cost_rate', label: '食材成本率', display: '40.2%', unit: '', level: 'green' },
+      { name: 'labor_cost_rate', label: '人力成本占比', display: '21.3%', unit: '', level: 'yellow' },
+      { name: 'rent_cost_rate', label: '租金占比', display: '9.7%', unit: '', level: 'green' },
+      { name: 'turnover_rate', label: '翻台率', display: '3.2', unit: '次/天', level: 'green' },
+      { name: 'ping_efficiency', label: '日坪效', display: '107.8', unit: '元/㎡', level: 'green' },
+      { name: 'labor_efficiency', label: '营收人效', display: '208', unit: '元/时', level: 'green' },
+      { name: 'gross_margin', label: '毛利率', display: '59.8%', unit: '', level: 'green' },
+      { name: 'net_margin', label: '净利润率', display: '16.2%', unit: '', level: 'green' },
+      { name: 'sssg', label: '同店增长率', display: '+3.5%', unit: '', level: 'green' },
+    ],
+    survival: [
+      { name: '悲观性营业额预估', rule: '70/80原则', value: '8,620元(≥预估)', pass: true },
+      { name: '菜单综合毛利率', rule: '≥65%', value: '59.8%', pass: false },
+      { name: '租金占比', rule: '<15%', value: '9.7%', pass: true },
+      { name: '人力成本占比', rule: '<20%', value: '21.3%', pass: false },
+      { name: '半变动成本占比', rule: '<6%', value: '4.8%', pass: true },
+      { name: '综合平米投入', value: '3,750元/㎡', rule: '<5,000元/㎡', pass: true },
+    ]
+  },
+  {
+    id: 2, name: 'XX咖啡·科技园店', bizTypeName: '咖啡', bizTag: 'primary',
+    address: '深圳市南山区科技园T3栋1层', area: 45, seatCount: 12,
+    health: { score: 72, level: 'yellow' },
+    breakeven: 4100,
+    alerts: [
+      { level: 'red', rule_id: 'R002', rule_name: '毛利率低于45%', display: '43.5%', threshold: '≥45%' },
+      { level: 'yellow', rule_id: 'Y002', rule_name: '人力成本占比20%-25%', display: '22.8%', threshold: '≤20%' },
+      { level: 'yellow', rule_id: 'Y006', rule_name: '毛利率45%-50%', display: '43.5%', threshold: '≥50%' },
+    ],
+    indicators: [
+      { name: 'daily_revenue', label: '日营业额', display: '4,850', unit: '元', level: 'yellow' },
+      { name: 'tc', label: '交易单数', display: '168', unit: '单', level: 'green' },
+      { name: 'ac', label: '客单价', display: '28.9', unit: '元', level: 'green' },
+      { name: 'food_cost_rate', label: '食材成本率', display: '56.5%', unit: '', level: 'red' },
+      { name: 'labor_cost_rate', label: '人力成本占比', display: '22.8%', unit: '', level: 'yellow' },
+      { name: 'rent_cost_rate', label: '租金占比', display: '12.4%', unit: '', level: 'green' },
+      { name: 'turnover_rate', label: '翻台率', display: '2.8', unit: '次/天', level: 'green' },
+      { name: 'ping_efficiency', label: '日坪效', display: '107.8', unit: '元/㎡', level: 'green' },
+      { name: 'labor_efficiency', label: '营收人效', display: '162', unit: '元/时', level: 'yellow' },
+      { name: 'gross_margin', label: '毛利率', display: '43.5%', unit: '', level: 'red' },
+      { name: 'net_margin', label: '净利润率', display: '8.3%', unit: '', level: 'red' },
+      { name: 'sssg', label: '同店增长率', display: '-2.1%', unit: '', level: 'yellow' },
+    ],
+    survival: [
+      { name: '悲观性营业额预估', rule: '70/80原则', value: '4,850元(≥预估)', pass: true },
+      { name: '菜单综合毛利率', rule: '≥65%', value: '43.5%', pass: false },
+      { name: '租金占比', rule: '<15%', value: '12.4%', pass: true },
+      { name: '人力成本占比', rule: '<20%', value: '22.8%', pass: false },
+      { name: '半变动成本占比', rule: '<6%', value: '5.2%', pass: true },
+      { name: '综合平米投入', value: '4,200元/㎡', rule: '<5,000元/㎡', pass: true },
+    ]
+  },
+  {
+    id: 3, name: 'XX快餐·福田店', bizTypeName: '快餐', bizTag: 'warning',
+    address: '深圳市福田区皇庭广场3层', area: 120, seatCount: 60,
+    health: { score: 38, level: 'red' },
+    breakeven: 7500,
+    alerts: [
+      { level: 'red', rule_id: 'R001', rule_name: '营业额低于盈亏平衡点', display: '5,200元', threshold: '7,500元' },
+      { level: 'red', rule_id: 'R003', rule_name: '人力成本占比超过30%', display: '32.1%', threshold: '≤25%' },
+      { level: 'red', rule_id: 'R007', rule_name: '翻台率全天低于1.5次', display: '1.2次', threshold: '≥1.5次' },
+      { level: 'yellow', rule_id: 'Y004', rule_name: '食材成本率连续3期上涨', display: '38.5%', threshold: '≤35%' },
+    ],
+    indicators: [
+      { name: 'daily_revenue', label: '日营业额', display: '5,200', unit: '元', level: 'red' },
+      { name: 'tc', label: '交易单数', display: '195', unit: '单', level: 'yellow' },
+      { name: 'ac', label: '客单价', display: '26.7', unit: '元', level: 'green' },
+      { name: 'food_cost_rate', label: '食材成本率', display: '38.5%', unit: '', level: 'yellow' },
+      { name: 'labor_cost_rate', label: '人力成本占比', display: '32.1%', unit: '', level: 'red' },
+      { name: 'rent_cost_rate', label: '租金占比', display: '25.6%', unit: '', level: 'red' },
+      { name: 'turnover_rate', label: '翻台率', display: '1.2', unit: '次/天', level: 'red' },
+      { name: 'ping_efficiency', label: '日坪效', display: '43.3', unit: '元/㎡', level: 'yellow' },
+      { name: 'labor_efficiency', label: '营收人效', display: '98', unit: '元/时', level: 'red' },
+      { name: 'gross_margin', label: '毛利率', display: '61.5%', unit: '', level: 'green' },
+      { name: 'net_margin', label: '净利润率', display: '-6.2%', unit: '', level: 'red' },
+      { name: 'sssg', label: '同店增长率', display: '-12.3%', unit: '', level: 'red' },
+    ],
+    survival: [
+      { name: '悲观性营业额预估', rule: '70/80原则', value: '5,200元(<预估)', pass: false },
+      { name: '菜单综合毛利率', rule: '≥65%', value: '61.5%', pass: false },
+      { name: '租金占比', rule: '<15%', value: '25.6%', pass: false },
+      { name: '人力成本占比', rule: '<20%', value: '32.1%', pass: false },
+      { name: '半变动成本占比', rule: '<6%', value: '5.8%', pass: true },
+      { name: '综合平米投入', value: '6,200元/㎡', rule: '<5,000元/㎡', pass: false },
+    ]
+  },
+];
+
+const fiveWhyTemplates = {
+  food_cost_rate: {
+    steps: [
+      { q: '为什么食材成本率超标？', a: '食材损耗/浪费严重' },
+      { q: '为什么食材损耗严重？', a: '订货量经常超出实际消耗' },
+      { q: '为什么订货量超出消耗？', a: '缺乏科学的订货预估工具' },
+      { q: '为什么缺乏订货工具？', a: '店长未掌握千元用量订货法' },
+      { q: '为什么店长未掌握？', a: '总部未纳入店长必修考核' },
+    ],
+    rootCause: '总部培训体系缺失，千元用量订货法未纳入店长考核',
+    smartAction: '30天内引入千元用量订货法，完成全员培训，将鲜果月度损耗率从8%降至5%以内'
+  },
+  labor_cost_rate: {
+    steps: [
+      { q: '为什么人力成本占比超标？', a: '排班不合理，闲时人员过多' },
+      { q: '为什么排班不合理？', a: '排班凭经验，未参考小时级营业额预测' },
+      { q: '为什么未参考预测？', a: '缺乏智能排班工具和数据' },
+      { q: '为什么缺乏工具？', a: '门店未部署数字化排班系统' },
+      { q: '为什么未部署？', a: '总部对数字化投入优先级不足' },
+    ],
+    rootCause: '数字化排班系统缺失，排班仍靠经验',
+    smartAction: '60天内上线智能排班模块，以人效≥业态健康线为目标，将人力成本占比降至20%以内'
+  },
+  gross_margin: {
+    steps: [
+      { q: '为什么毛利率低于警戒线？', a: '产品定价无法覆盖食材成本' },
+      { q: '为什么定价无法覆盖？', a: '折扣促销力度过大/低价外卖占比过高' },
+      { q: '为什么折扣力度大？', a: '为冲营业额盲目做活动，未算ROI' },
+      { q: '为什么未算ROI？', a: '缺乏促销效果评估机制' },
+      { q: '为什么缺乏评估机制？', a: '运营团队未建立促销ROI核算流程' },
+    ],
+    rootCause: '促销活动缺乏ROI核算，盲目打折侵蚀毛利',
+    smartAction: '立即暂停无效促销，建立促销ROI评估机制，毛利率低于45%的活动不予审批'
+  },
+  turnover_rate: {
+    steps: [
+      { q: '为什么翻台率偏低？', a: '客流量不足，空台率高' },
+      { q: '为什么客流量不足？', a: '门店营销吸引力下降，老客流失' },
+      { q: '为什么老客流失？', a: '产品创新不足，消费体验下降' },
+      { q: '为什么产品创新不足？', a: '未建立周期性上新机制' },
+      { q: '为什么未建立上新机制？', a: '研发与门店运营脱节' },
+    ],
+    rootCause: '产品研发与门店运营脱节，缺乏周期性上新机制',
+    smartAction: '建立月度上新流程，结合千元用量优化产品结构，通过流量新品提升TC'
+  },
+  daily_revenue: {
+    steps: [
+      { q: '为什么营业额低于盈亏平衡点？', a: '日均客流严重不足' },
+      { q: '为什么客流不足？', a: '选址偏差/商圈衰退/竞对分流' },
+      { q: '为什么选址出现偏差？', a: '选址时未做充分的商圈调研' },
+      { q: '为什么未充分调研？', a: '开发流程缺乏数据化选址标准' },
+      { q: '为什么缺乏标准？', a: '总部开发体系不完善' },
+    ],
+    rootCause: '选址模型缺陷，开发流程缺乏数据化标准',
+    smartAction: '立即评估门店止损可行性；如可挽救，30天内启动地推+会员储值双线引流'
+  },
+};
+
+// ========== Vue App ==========
+const app = createApp({
+  setup() {
+    const currentPage = ref('dashboard');
+    const selectedStore = ref(null);
+    const stores = ref(storesData);
+    const diagTab = ref('be');
+
+    const alertCount = computed(() => storesData.reduce((sum, s) => sum + s.alerts.length, 0));
+    const allAlerts = computed(() => {
+      return storesData.flatMap(s => s.alerts.map(a => ({ ...a, storeName: s.name, date: '2026-04-30' })));
+    });
+
+    const levelColor = (level) => ({ green: '#67c23a', yellow: '#e6a23c', red: '#f56c6c' }[level]);
+
+    // 盈亏平衡
+    const be = ref({ rent: 30000, labor: 45000, utility: 12000, margin: 0.4, revenue: 8000 });
+    const beResult = ref(null);
+    const calcBE = () => {
+      const dailyFixed = (be.value.rent + be.value.labor + be.value.utility) / 30;
+      const breakeven = dailyFixed / be.value.margin;
+      const safetyMargin = (be.value.revenue - breakeven) / breakeven;
+      let status = 'green';
+      if (safetyMargin < 0) status = 'red';
+      else if (safetyMargin < 0.3) status = 'yellow';
+      beResult.value = { dailyFixed, breakeven, safetyMargin, status };
+    };
+    calcBE(); // 默认计算一次
+
+    // 5Why
+    const fw = ref({ indicator: 'food_cost_rate' });
+    const fwResult = ref(null);
+    const doFiveWhy = () => {
+      fwResult.value = fiveWhyTemplates[fw.value.indicator] || null;
+    };
+    doFiveWhy(); // 默认显示一次
+
+    // 人效矩阵
+    const mx = ref({ revenue: 200, costRate: 0.22, bizType: 'tea_drink' });
+    const mxResult = ref(null);
+    const doMatrix = () => {
+      const rev = mx.value.revenue;
+      const cost = mx.value.costRate;
+      const healthyMap = { tea_drink: 200, coffee: 180, fast_food: 180, hotpot: 130 };
+      const healthy = healthyMap[mx.value.bizType] || 180;
+      const revHigh = rev >= healthy;
+      const costHigh = cost > 0.20;
+      let quadrant, name, diagnosis, action;
+      if (revHigh && !costHigh) {
+        quadrant = 'lean'; name = 'A区·精益区';
+        diagnosis = `人效${rev}元/时(≥${healthy})，成本${(cost*100).toFixed(1)}%(<20%)，运营效率优秀`;
+        action = '维持现状，冲刺行业标杆；探索智能排班进一步提效';
+      } else if (revHigh && costHigh) {
+        quadrant = 'obese'; name = 'B区·肥胖区';
+        diagnosis = `人效${rev}元/时(≥${healthy})，但成本${(cost*100).toFixed(1)}%(>20%)，编制冗余`;
+        action = '立即优化编制，推进通岗并岗，用智能排班压缩无效工时';
+      } else if (!revHigh && !costHigh) {
+        quadrant = 'anemic'; name = 'C区·贫血区';
+        diagnosis = `人效仅${rev}元/时(<${healthy})，成本${(cost*100).toFixed(1)}%(<20%)，营收不足`;
+        action = '警惕服务崩塌，核心是提营收：推流量新品+会员储值+线上评分提升';
+      } else {
+        quadrant = 'emergency'; name = 'D区·急救区';
+        diagnosis = `人效仅${rev}元/时(<${healthy})，成本${(cost*100).toFixed(1)}%(>20%)，双重恶化`;
+        action = '限时请专家制定重组方案：同时压编制+提营收，7天内出改善方案';
+      }
+      mxResult.value = { quadrant, name, diagnosis, action };
+    };
+    doMatrix(); // 默认显示一次
+
+    // 渲染图表
+    const renderChart = () => {
+      if (!selectedStore.value) return;
+      const chartId = 'chart-' + selectedStore.value.id;
+      nextTick(() => {
+        const el = document.getElementById(chartId);
+        if (!el) return;
+        const chart = echarts.init(el);
+        // 生成30天模拟数据
+        const dates = [];
+        const revenues = [];
+        const breakevens = [];
+        const margins = [];
+        const laborCosts = [];
+        for (let i = 29; i >= 0; i--) {
+          const d = new Date(2026, 3, 30 - i);
+          dates.push(`${d.getMonth()+1}/${d.getDate()}`);
+          const base = selectedStore.value.id === 1 ? 8000 : selectedStore.value.id === 2 ? 4500 : 5000;
+          const rev = base + Math.round(Math.random() * 3000 - 1000);
+          revenues.push(rev);
+          breakevens.push(selectedStore.value.breakeven);
+          margins.push(40 + Math.random() * 25);
+          laborCosts.push(15 + Math.random() * 18);
+        }
+        chart.setOption({
+          tooltip: { trigger: 'axis' },
+          legend: { data: ['日营业额', '盈亏平衡线', '毛利率', '人力成本占比'] },
+          grid: { left: 60, right: 60, bottom: 40 },
+          xAxis: { type: 'category', data: dates },
+          yAxis: [
+            { type: 'value', name: '营业额(元)' },
+            { type: 'value', name: '比率(%)', axisLabel: { formatter: v => v.toFixed(0) + '%' } },
+          ],
+          series: [
+            { name: '日营业额', type: 'bar', data: revenues, itemStyle: { color: '#409eff' } },
+            { name: '盈亏平衡线', type: 'line', data: breakevens, lineStyle: { type: 'dashed', color: '#f56c6c', width: 2 }, symbol: 'none' },
+            { name: '毛利率', type: 'line', yAxisIndex: 1, data: margins, itemStyle: { color: '#67c23a' }, smooth: true },
+            { name: '人力成本占比', type: 'line', yAxisIndex: 1, data: laborCosts, itemStyle: { color: '#e6a23c' }, smooth: true },
+          ],
+        });
+        window.addEventListener('resize', () => chart.resize());
+      });
+    };
+
+    watch(selectedStore, renderChart);
+
+    return { currentPage, selectedStore, stores, alertCount, allAlerts, levelColor,
+             diagTab, be, beResult, calcBE, fw, fwResult, doFiveWhy, mx, mxResult, doMatrix };
+  }
+});
+
+app.use(ElementPlus);
+app.mount('#app');
+</script>
+</body>
+</html>

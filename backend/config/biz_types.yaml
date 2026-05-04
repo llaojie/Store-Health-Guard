@@ -1,0 +1,332 @@
+# 门店业态参考值配置
+# 每个业态定义各指标的健康值、警戒值、危险值区间
+
+biz_types:
+  fast_food:
+    name: "快餐"
+    indicators:
+      daily_revenue:
+        healthy: [11000, 19000]
+        warning: null
+        danger: null
+      tc:
+        healthy_min_ratio: 0.8
+        seat_utilization: 2.5
+      ac:
+        healthy: null
+        warning_decline_pct: 0.10
+      food_cost_rate:
+        healthy: [0, 0.35]
+        warning: [0.35, 0.40]
+        danger: [0.40, 1.0]
+      labor_cost_rate:
+        healthy: [0, 0.20]
+        warning: [0.20, 0.25]
+        danger: [0.25, 1.0]
+      rent_cost_rate:
+        healthy: [0, 0.15]
+        warning: [0.15, 0.20]
+        danger: [0.20, 1.0]
+      turnover_rate:
+        healthy_peak: 3.0
+        warning_avg: 1.5
+        danger_avg: 1.5
+      ping_efficiency_daily:
+        healthy_yearly: [40000, 60000]
+        warning_daily: 30
+        danger_daily: 20
+      gross_margin:
+        healthy: [0.58, 0.64]
+        warning: [0.45, 0.58]
+        danger: [0, 0.45]
+      net_margin:
+        healthy: [0.15, 1.0]
+        warning: [0.10, 0.15]
+        danger: [0, 0.10]
+      revenue_per_labor_hour:
+        death_line: 120
+        healthy_line: 180
+        benchmark: 237
+
+  tea_drink:
+    name: "茶饮"
+    indicators:
+      daily_revenue:
+        healthy: [4000, 20000]
+      tc:
+        healthy_min_ratio: 0.8
+        seat_utilization: 2.5
+      ac:
+        healthy: [15, 25]
+        warning_decline_pct: 0.10
+      food_cost_rate:
+        healthy: [0.35, 0.45]
+        warning: [0.45, 0.50]
+        danger: [0.50, 1.0]
+      labor_cost_rate:
+        healthy: [0, 0.20]
+        warning: [0.20, 0.25]
+        danger: [0.25, 1.0]
+      rent_cost_rate:
+        healthy: [0, 0.15]
+        warning: [0.15, 0.20]
+        danger: [0.20, 1.0]
+      turnover_rate:
+        healthy_peak: 3.0
+        warning_avg: 1.5
+        danger_avg: 1.5
+      ping_efficiency_daily:
+        healthy_yearly: [20000, 58000]
+        warning_daily: 30
+        danger_daily: 20
+      gross_margin:
+        healthy: [0.53, 0.62]
+        warning: [0.45, 0.53]
+        danger: [0, 0.45]
+      net_margin:
+        healthy: [0.15, 1.0]
+        warning: [0.10, 0.15]
+        danger: [0, 0.10]
+      revenue_per_labor_hour:
+        death_line: 140
+        healthy_line: 200
+        benchmark: 283
+
+  coffee:
+    name: "咖啡"
+    indicators:
+      daily_revenue:
+        healthy: [5000, 15000]
+      tc:
+        healthy_min_ratio: 0.8
+        seat_utilization: 2.5
+      ac:
+        healthy: [25, 35]
+        warning_decline_pct: 0.10
+      food_cost_rate:
+        healthy: [0, 0.30]
+        warning: [0.30, 0.35]
+        danger: [0.35, 1.0]
+      labor_cost_rate:
+        healthy: [0, 0.20]
+        warning: [0.20, 0.25]
+        danger: [0.25, 1.0]
+      rent_cost_rate:
+        healthy: [0, 0.15]
+        warning: [0.15, 0.20]
+        danger: [0.20, 1.0]
+      turnover_rate:
+        healthy_peak: 3.0
+        warning_avg: 1.5
+        danger_avg: 1.5
+      ping_efficiency_daily:
+        healthy_yearly: [50000, 60000]
+        warning_daily: 30
+        danger_daily: 20
+      gross_margin:
+        healthy: [0.65, 0.75]
+        warning: [0.45, 0.65]
+        danger: [0, 0.45]
+      net_margin:
+        healthy: [0.15, 1.0]
+        warning: [0.10, 0.15]
+        danger: [0, 0.10]
+      revenue_per_labor_hour:
+        death_line: 120
+        healthy_line: 180
+        benchmark: 220
+
+  snack:
+    name: "小吃"
+    indicators:
+      daily_revenue:
+        healthy: [2000, 5000]
+      tc:
+        healthy_min_ratio: 0.8
+        seat_utilization: 2.5
+      ac:
+        healthy: [20, 30]
+        warning_decline_pct: 0.10
+      food_cost_rate:
+        healthy: [0, 0.30]
+        warning: [0.30, 0.38]
+        danger: [0.38, 1.0]
+      labor_cost_rate:
+        healthy: [0, 0.20]
+        warning: [0.20, 0.25]
+        danger: [0.25, 1.0]
+      rent_cost_rate:
+        healthy: [0, 0.15]
+        warning: [0.15, 0.20]
+        danger: [0.20, 1.0]
+      turnover_rate:
+        healthy_peak: 3.0
+        warning_avg: 1.5
+        danger_avg: 1.5
+      ping_efficiency_daily:
+        healthy_yearly: [39000, 45000]
+        warning_daily: 30
+        danger_daily: 20
+      gross_margin:
+        healthy: [0.50, 0.60]
+        warning: [0.45, 0.50]
+        danger: [0, 0.45]
+      net_margin:
+        healthy: [0.15, 1.0]
+        warning: [0.10, 0.15]
+        danger: [0, 0.10]
+      revenue_per_labor_hour:
+        death_line: 100
+        healthy_line: 150
+        benchmark: 200
+
+  hotpot:
+    name: "火锅"
+    indicators:
+      daily_revenue: null
+      tc:
+        healthy_min_ratio: 0.8
+      ac:
+        healthy: [80, 130]
+        warning_decline_pct: 0.10
+      food_cost_rate:
+        healthy: [0, 0.35]
+        warning: [0.35, 0.40]
+        danger: [0.40, 1.0]
+      labor_cost_rate:
+        healthy: [0, 0.20]
+        warning: [0.20, 0.25]
+        danger: [0.25, 1.0]
+      rent_cost_rate:
+        healthy: [0, 0.15]
+        warning: [0.15, 0.20]
+        danger: [0.20, 1.0]
+      turnover_rate:
+        healthy_dinner: 3.0
+        warning_avg: 1.5
+        danger_avg: 1.5
+      ping_efficiency_daily:
+        healthy_yearly: [30000, 50000]
+        warning_daily: 30
+        danger_daily: 20
+      gross_margin:
+        healthy: [0.55, 0.65]
+        warning: [0.45, 0.55]
+        danger: [0, 0.45]
+      net_margin:
+        healthy: [0.15, 1.0]
+        warning: [0.10, 0.15]
+        danger: [0, 0.10]
+      revenue_per_labor_hour:
+        death_line: 90
+        healthy_line: 130
+        benchmark: 206
+
+
+# 通用预警规则（跨业态）
+alert_rules:
+  red:
+    - id: "R001"
+      name: "营业额低于盈亏平衡点"
+      indicator: "daily_revenue"
+      condition: "value < breakeven_point"
+      response_time: "2h"
+    - id: "R002"
+      name: "毛利率低于45%"
+      indicator: "gross_margin"
+      condition: "value < 0.45"
+      response_time: "2h"
+    - id: "R003"
+      name: "人力成本占比超过30%"
+      indicator: "labor_cost_rate"
+      condition: "value > 0.30"
+      response_time: "2h"
+    - id: "R004"
+      name: "租金成本占比超过20%"
+      indicator: "rent_cost_rate"
+      condition: "value > 0.20"
+      response_time: "2h"
+    - id: "R005"
+      name: "净利润率低于10%持续3月"
+      indicator: "net_margin"
+      condition: "value < 0.10 and consecutive_months >= 3"
+      response_time: "2h"
+    - id: "R006"
+      name: "客流同比下降超30%"
+      indicator: "tc_yoy_change"
+      condition: "value < -0.30"
+      response_time: "2h"
+    - id: "R007"
+      name: "翻台率全天低于1.5次"
+      indicator: "turnover_rate"
+      condition: "value < 1.5"
+      response_time: "2h"
+
+  yellow:
+    - id: "Y001"
+      name: "营业额安全边际不足"
+      indicator: "daily_revenue"
+      condition: "breakeven_point <= value < breakeven_point * 1.2"
+      response_time: "当日"
+    - id: "Y002"
+      name: "人力成本占比20%-25%"
+      indicator: "labor_cost_rate"
+      condition: "0.20 <= value <= 0.25"
+      response_time: "当日"
+    - id: "Y003"
+      name: "租金成本占比15%-20%"
+      indicator: "rent_cost_rate"
+      condition: "0.15 <= value <= 0.20"
+      response_time: "当日"
+    - id: "Y004"
+      name: "食材成本率连续3期上涨"
+      indicator: "food_cost_rate"
+      condition: "consecutive_rise >= 3"
+      response_time: "当日"
+    - id: "Y005"
+      name: "客单价连续2月下滑5%-10%"
+      indicator: "ac"
+      condition: "consecutive_decline_months >= 2 and decline_pct >= 0.05"
+      response_time: "当日"
+    - id: "Y006"
+      name: "毛利率45%-50%"
+      indicator: "gross_margin"
+      condition: "0.45 <= value < 0.50"
+      response_time: "当日"
+    - id: "Y007"
+      name: "出餐超时率5%-10%"
+      indicator: "overtime_rate"
+      condition: "0.05 <= value <= 0.10"
+      response_time: "当日"
+    - id: "Y008"
+      name: "同店增长率-5%~0%"
+      indicator: "sssg"
+      condition: "-0.05 <= value < 0"
+      response_time: "当日"
+
+# 单店模型六大保命条件
+survival_conditions:
+  - id: "S001"
+    name: "悲观性营业额预估"
+    rule: "采用70/80原则预估"
+    check: "actual_revenue >= pessimistic_revenue"
+  - id: "S002"
+    name: "菜单综合毛利率"
+    rule: "≥65%"
+    check: "menu_gross_margin >= 0.65"
+  - id: "S003"
+    name: "租金占比"
+    rule: "<15%"
+    check: "rent_cost_rate < 0.15"
+  - id: "S004"
+    name: "人均产值"
+    rule: "人力成本占比<20%"
+    check: "labor_cost_rate < 0.20"
+  - id: "S005"
+    name: "半变动成本占比"
+    rule: "<6%"
+    check: "semi_variable_cost_rate < 0.06"
+  - id: "S006"
+    name: "综合平米投入"
+    rule: "<0.5万元/㎡"
+    check: "investment_per_sqm < 5000"
